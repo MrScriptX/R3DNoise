@@ -1,5 +1,6 @@
 #include "R3DNoise.h"
 
+#define F1 0.4142135623730950488
 #define F2 0.366025403784438
 #define F3 0.3333333333333333333
 
@@ -9,8 +10,22 @@
 
 #define FASTFLOOR(x) ( ((x)>0) ? ((int)x) : (((int)x)-1) )
 
+double gradient(int hash, double x);
 double gradient(int hash, double x, double y);
 double gradient(int hash, double x, double y, double z);
+
+double gradient(int hash, double x)
+{
+	int h = hash & 15;
+	double grad = 1.0 + (h & 7);
+
+	if (h & 8)
+	{
+		grad = -grad;
+	}
+
+	return grad * x;
+}
 
 double gradient(int hash, double x, double y)
 {
@@ -26,6 +41,27 @@ double gradient(int hash, double x, double y, double z)
 	double u = h < 8 ? x : y;
 	double v = h < 4 ? y : h == 12 || h == 14 ? x : z;
 	return ((h & 1) ? -u : u) + ((h & 2) ? -v : v);
+}
+
+double R3DNoise::Noise1D(double x, double inFactor)
+{
+	x *= inFactor;
+
+	int i = FASTFLOOR(x);
+	int i1 = i + 1;
+
+	double x0 = x - i;
+	double x1 = x0 - 1.0;
+
+	double t = 1.0 - x0 * x0;
+	t *= t;
+	double n0 = t * t * gradient(R3DNoise::perm[i & 0xff], x0);
+
+	double t1 = 1.0 - x1 * x1;
+	t1 *= t1;
+	double n1 = t1 * t1 * gradient(R3DNoise::perm[i1 & 0xff], x1);
+
+	return 0.395 * (n0 + n1);
 }
 
 double R3DNoise::Noise2D(double x, double y, double inFactor)
